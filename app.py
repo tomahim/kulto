@@ -31,7 +31,7 @@ def chat_with_agent(message, history, model_name):
         model_name: Selected OpenAI model name
 
     Returns:
-        Response string
+        Response string with tool call details
     """
     try:
         # Check if API key is set
@@ -50,9 +50,12 @@ def chat_with_agent(message, history, model_name):
         )
 
         # Try to get Wikipedia context
+        wiki_used = False
+        wiki_result = None
         try:
             wiki_result = wikipedia_tool.run(message)
             context = f"Wikipedia information: {wiki_result}\n\n"
+            wiki_used = True
         except Exception:
             context = ""
 
@@ -68,7 +71,30 @@ def chat_with_agent(message, history, model_name):
         else:
             answer = str(response)
 
-        return answer
+        # Format response with tool call details
+        if wiki_used:
+            summary = (wiki_result[:200] + "...") if len(
+                wiki_result) > 200 else wiki_result
+            tool_details = f"""
+<details>
+<summary>🔧 Tool Calls</summary>
+
+**Tool Used:** Wikipedia Search
+**Query:** {message}
+**Result Summary:** {summary}
+
+</details>
+
+---
+
+"""
+            final_answer = tool_details + answer
+        else:
+            final_answer = (
+                "ℹ️ *No Wikipedia search performed*\n\n---\n\n" + answer
+            )
+
+        return final_answer
 
     except Exception as e:
         error_msg = (
