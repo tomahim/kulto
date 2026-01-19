@@ -8,24 +8,27 @@ from langchain_community.utilities import WikipediaAPIWrapper
 # Load environment variables
 load_dotenv()
 
-# Initialize OpenAI GPT-4o model
-llm = ChatOpenAI(
-    model="gpt-4o",
-    temperature=0.7
-)
-
 # Initialize Wikipedia tool
 wikipedia = WikipediaAPIWrapper()
 wikipedia_tool = WikipediaQueryRun(api_wrapper=wikipedia)
 
+# Available OpenAI models
+AVAILABLE_MODELS = {
+    "GPT-4o": "gpt-4o",
+    "GPT-4o Mini": "gpt-4o-mini",
+    "GPT-4 Turbo": "gpt-4-turbo-preview",
+    "GPT-3.5 Turbo": "gpt-3.5-turbo"
+}
 
-def chat_with_agent(message, history):
+
+def chat_with_agent(message, history, model_name):
     """
     Process user message with the LangChain agent.
 
     Args:
         message: User's input message
         history: Chat history (managed by Gradio)
+        model_name: Selected OpenAI model name
 
     Returns:
         Response string
@@ -39,6 +42,12 @@ def chat_with_agent(message, history):
                 "Get your API key from "
                 "https://platform.openai.com/api-keys"
             )
+
+        # Initialize LLM with selected model
+        llm = ChatOpenAI(
+            model=AVAILABLE_MODELS[model_name],
+            temperature=0.7
+        )
 
         # Try to get Wikipedia context
         try:
@@ -69,22 +78,38 @@ def chat_with_agent(message, history):
         return error_msg
 
 
-# Create Gradio ChatInterface (simpler than Blocks for chat)
-demo = gr.ChatInterface(
-    fn=chat_with_agent,
-    title="🤖 LangChain Wikipedia Chat",
-    description=(
-        "Ask me anything! I can search Wikipedia to provide accurate, "
-        "factual answers.\n\n"
-        "**Powered by:** OpenAI GPT-4o + LangChain + Wikipedia"
-    ),
-    examples=[
-        "What is quantum computing?",
-        "Tell me about Marie Curie",
-        "What is the history of the Internet?",
-        "Explain artificial intelligence"
-    ]
-)
+# Create Gradio interface with Blocks for better layout control
+with gr.Blocks(title="LangChain Wikipedia Chat") as demo:
+    gr.Markdown(
+        """
+        # 🤖 LangChain Wikipedia Chat
+
+        Ask me anything! I can search Wikipedia to provide accurate,
+        factual answers.
+
+        **Powered by:** OpenAI + LangChain + Wikipedia
+        """
+    )
+
+    # Model selector dropdown outside chat interface
+    model_dropdown = gr.Dropdown(
+        choices=list(AVAILABLE_MODELS.keys()),
+        value="GPT-4o",
+        label="Select OpenAI Model",
+        info="Choose which model to use for responses"
+    )
+
+    # Chat interface
+    chat_interface = gr.ChatInterface(
+        fn=chat_with_agent,
+        additional_inputs=[model_dropdown],
+        examples=[
+            ["What is quantum computing?"],
+            ["Tell me about Marie Curie"],
+            ["What is the history of the Internet?"],
+            ["Explain artificial intelligence"]
+        ]
+    )
 
 if __name__ == "__main__":
     print("🚀 Starting Gradio app...")
