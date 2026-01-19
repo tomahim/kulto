@@ -1,6 +1,7 @@
 import os
 from dotenv import load_dotenv
 import gradio as gr
+import wikipedia as wiki_api
 from langchain_openai import ChatOpenAI
 from langchain_community.tools import WikipediaQueryRun
 from langchain_community.utilities import WikipediaAPIWrapper
@@ -9,7 +10,7 @@ from langchain_community.utilities import WikipediaAPIWrapper
 load_dotenv()
 
 # Initialize Wikipedia tool
-wikipedia = WikipediaAPIWrapper()
+wikipedia = WikipediaAPIWrapper(top_k_results=2, doc_content_chars_max=500)
 wikipedia_tool = WikipediaQueryRun(api_wrapper=wikipedia)
 
 # Available OpenAI models
@@ -52,8 +53,29 @@ def chat_with_agent(message, history, model_name):
         # Try to get Wikipedia context
         wiki_used = False
         wiki_result = None
+        wiki_pages = []
         try:
+            # Get Wikipedia results
             wiki_result = wikipedia_tool.run(message)
+
+            # Extract page titles by searching Wikipedia
+            search_results = wiki_api.search(message, results=2)
+
+            # Build page URLs
+            for i, page_title in enumerate(search_results[:2], 1):
+                try:
+                    page_url = (
+                        f"https://en.wikipedia.org/wiki/"
+                        f"{page_title.replace(' ', '_')}"
+                    )
+                    wiki_pages.append({
+                        'title': page_title,
+                        'url': page_url,
+                        'index': i
+                    })
+                except Exception:
+                    continue
+
             context = f"Wikipedia information: {wiki_result}\n\n"
             wiki_used = True
         except Exception:
@@ -71,8 +93,35 @@ def chat_with_agent(message, history, model_name):
         else:
             answer = str(response)
 
-        # Format response with tool call details
-        if wiki_used:
+        # Format response with tool call details and citations
+        if wiki_used and wiki_pages:
+            summary = (wiki_result[:200] + "...") if len(
+                wiki_result) > 200 else wiki_result
+
+            # Build citations footer
+            citations = "\n\n---\n\n**Sources:**\n\n"
+            for page in wiki_pages:
+                citations += (
+                    f"[{page['index']}] "
+                    f"[{page['title']}]({page['url']})\n"
+                )
+            
+            tool_details = f"""
+<details>
+<summary>🔧 Tool Calls</summary>
+
+**Tool Used:** Wikipedia Search
+**Query:** {message}
+**Result Summary:** {summary}
+
+</details>
+
+---
+
+"""
+            final_answer = tool_details + answer + citations
+        elif wiki_used:
+            # Wikipedia was used but no pages extracted
             summary = (wiki_result[:200] + "...") if len(
                 wiki_result) > 200 else wiki_result
             tool_details = f"""
