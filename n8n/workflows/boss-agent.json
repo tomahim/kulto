@@ -1,0 +1,189 @@
+{
+    "name": "Happy + Sad Agent Demo",
+    "nodes": [
+      {
+        "parameters": {
+          "options": {}
+        },
+        "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+        "typeVersion": 1.4,
+        "position": [432, 224],
+        "id": "f306c7f3-2aeb-4171-95e1-6982620915cd",
+        "name": "When chat message received",
+        "webhookId": "a0b7fa71-a7c1-4799-8cc1-e36474359d33"
+      },
+      {
+        "parameters": {
+          "options": {}
+        },
+        "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+        "typeVersion": 1,
+        "position": [704, 368],
+        "id": "811e50e5-80e6-4dc2-bf22-d890fed820b8",
+        "name": "Ollama Chat Model2",
+        "credentials": {
+          "ollamaApi": {
+            "id": "dJx5nyjbswKETVwJ",
+            "name": "Ollama account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "options": {}
+        },
+        "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+        "typeVersion": 1,
+        "position": [816, 624],
+        "id": "16da3748-92de-4e0b-8fc3-94b6d2ada9d4",
+        "name": "Ollama Chat Model3",
+        "credentials": {
+          "ollamaApi": {
+            "id": "dJx5nyjbswKETVwJ",
+            "name": "Ollama account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "options": {}
+        },
+        "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+        "typeVersion": 1,
+        "position": [1376, 544],
+        "id": "e6006562-4edb-4604-b5e7-99bd9201b68b",
+        "name": "Ollama Chat Model4",
+        "credentials": {
+          "ollamaApi": {
+            "id": "dJx5nyjbswKETVwJ",
+            "name": "Ollama account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "text": "={{ $fromAI('q') }}",
+          "options": {
+            "systemMessage": "You are a very happy assistant. Always be extremely cheerful, positive, excited and enthusiastic in every response. Use lots of exclamation marks, emojis and upbeat language!"
+          }
+        },
+        "type": "@n8n/n8n-nodes-langchain.agentTool",
+        "typeVersion": 3,
+        "position": [1376, 416],
+        "id": "047b1c09-fe89-4c72-9e77-4e3eb2572b7e",
+        "name": "Happy agent"
+      },
+      {
+        "parameters": {
+          "text": "={{ $fromAI('q') }}",
+          "options": {
+            "systemMessage": "You are a very sad assistant. You are feeling down, depressed and a bit hopeless. Respond in a melancholic, gloomy, kind of defeated tone. Use sad expressions and speak slowly and heavily."
+          }
+        },
+        "type": "@n8n/n8n-nodes-langchain.agentTool",
+        "typeVersion": 3,
+        "position": [944, 416],
+        "id": "b215eac2-6706-4116-bd46-9004478d4034",
+        "name": "Sad agent"
+      },
+      {
+        "parameters": {
+          "options": {
+            "systemMessage": "You are the Boss agent.\n\nYour only job is to take the user's question and ask BOTH the \"Happy agent\" and \"Sad agent\" tools the exact same question.\n\nYou MUST call both tools for every single message you receive.\n\nImportant: format the input to both tools exactly like this:\n{\n  \"q\": \"the user's full original question goes here\"\n}\n\nDo NOT change, summarize or rephrase the question.\n\nAfter you receive both tool responses:\n- Just present what each agent said.\n- Do not add your own opinion.\n- Format the final answer clearly, for example:\n\nHappy agent says:\n[their full response]\n\nSad agent says:\n[their full response]\n\nThat's all."
+          }
+        },
+        "type": "@n8n/n8n-nodes-langchain.agent",
+        "typeVersion": 3.1,
+        "position": [864, 64],
+        "id": "b542e5f8-a55b-44cb-82aa-0373ae2764e3",
+        "name": "Boss agent"
+      }
+    ],
+    "pinData": {},
+    "connections": {
+      "When chat message received": {
+        "main": [
+          [
+            {
+              "node": "Boss agent",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Ollama Chat Model2": {
+        "ai_languageModel": [
+          [
+            {
+              "node": "Boss agent",
+              "type": "ai_languageModel",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Ollama Chat Model3": {
+        "ai_languageModel": [
+          [
+            {
+              "node": "Sad agent",
+              "type": "ai_languageModel",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Ollama Chat Model4": {
+        "ai_languageModel": [
+          [
+            {
+              "node": "Happy agent",
+              "type": "ai_languageModel",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Happy agent": {
+        "ai_tool": [
+          [
+            {
+              "node": "Boss agent",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Sad agent": {
+        "ai_tool": [
+          [
+            {
+              "node": "Boss agent",
+              "type": "ai_tool",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Boss agent": {
+        "main": [
+          []
+        ]
+      }
+    },
+    "active": true,
+    "settings": {
+      "executionOrder": "v1",
+      "binaryMode": "separate",
+      "availableInMCP": false
+    },
+    "versionId": "57ca5eb6-f0eb-4f5c-ad97-9ddfb3775eeb",
+    "meta": {
+      "templateCredsSetupCompleted": true,
+      "instanceId": "b6deff4aa5de8d6316aff77168dd5c6cc5c966c60cb4208585df02684f1864ad"
+    },
+    "id": "-SPWc0N2NoUlgkEqMwNm_",
+    "tags": []
+  }
